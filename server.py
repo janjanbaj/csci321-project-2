@@ -77,9 +77,16 @@ def client_handler(sock: socket.socket, address: Tuple[str, int]):
     if current_session is None:
         current_session = server_db.newSession(user_id, sock)
         print(f"Client {address} connected. New session created.")
+        msg = f"[{datetime.datetime.fromtimestamp(time.time())}]: {ip_address} has connected."
     else:
         current_session.connect(sock)
         print(f"Client {address} re-connected. Resuming session.")
+        msg = f"[{datetime.datetime.fromtimestamp(time.time())}]: {ip_address} has reconnected."
+
+    other_active_sessions = server_db.getActiveSessions() 
+    for other in other_active_sessions:
+        if other is not current_session:
+            other.sendMessage(msg)
 
     try:
         while current_session.active:
@@ -121,6 +128,11 @@ def client_handler(sock: socket.socket, address: Tuple[str, int]):
         sock.close()
         current_session.disconnect()
         print(f"Client {address} has disconnected.")
+        other_active_sessions = server_db.getActiveSessions() 
+        msg = f"[{datetime.datetime.fromtimestamp(time.time())}]: Disconnected {ip_address}"
+        for other in other_active_sessions:
+            other.sendMessage(msg)
+        
 
 
 
