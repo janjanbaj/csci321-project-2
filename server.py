@@ -4,16 +4,13 @@ import threading
 import argparse
 import time
 import struct
+import datetime
 from typing import Optional, List, Tuple
 
-def send_message(sock: socket.socket, message: Tuple[float, str]):
-    """
-    Sends a message over the socket, prefixed with its length.
-    """
-    timestamp, content = message
-    # Construct the full message string first, including the time
-    full_message_str = f"Time: {timestamp}: {content}"
-    encoded_message = full_message_str.encode('utf-8')
+def send_message(sock: socket.socket, message: str):
+    # Sends a message over the socket, prefixed with its length.
+
+    encoded_message = message.encode('utf-8')
     message_length = len(encoded_message)
 
     # Pack the length into a 4-byte network byte order integer ('!I')
@@ -29,8 +26,8 @@ class Session:
         self.active = True
         self.sock = sock 
 
-    def newMessage(self, msg: (float, str)):
-        self.messages.append(msg)
+    def newMessage(self, msg: str):
+        self.messages.append((time.time(), msg))
 
     def disconnect(self):
         self.active = False
@@ -97,19 +94,21 @@ def client_handler(sock: socket.socket, address: Tuple[str, int]):
             try:
                 msg = data.decode("utf-8").strip()
             except UnicodeDecodeError:
-                print(f"Warning: Could not decode message from {address}")
+                print(f"Warning: Could not decode message from {ip_address}")
                 continue
 
             if not msg:
                 continue
 
             if msg == "his":
-                print(f"Sending history to {address}.")
+                print(f"Sending history to {ip_address}.")
                 for message in current_session.messages:
-                    send_message(sock, message)
+                    msg = f"[{datetime.datetime.fromtimestamp(message[0])}][{ip_address}]: {message[1]}"
+                    send_message(sock, msg)
             else:
-                msg = (time.time(), msg)
                 current_session.newMessage(msg)
+                time_stamped_message = current_session.messages[-1]
+                msg = f"[{datetime.datetime.fromtimestamp(time_stamped_message[0])}][{ip_address}]: {msg}"
                 other_active_sessions = server_db.getActiveSessions() 
                 for other in other_active_sessions:
                     if other is not current_session:
