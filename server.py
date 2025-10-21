@@ -29,8 +29,8 @@ class Session:
         self.active = True
         self.sock = sock 
 
-    def newMessage(self, msg: str):
-        self.messages.append((time.time(), msg))
+    def newMessage(self, msg: (float, str)):
+        self.messages.append(msg)
 
     def disconnect(self):
         self.active = False
@@ -108,10 +108,12 @@ def client_handler(sock: socket.socket, address: Tuple[str, int]):
                 for message in current_session.messages:
                     send_message(sock, message)
             else:
+                msg = (time.time(), msg)
                 current_session.newMessage(msg)
                 other_active_sessions = server_db.getActiveSessions() 
                 for other in other_active_sessions:
-                    other.sendMessage(msg)
+                    if other is not current_session:
+                        other.sendMessage(msg)
                 
 
     except Exception as e:
