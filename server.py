@@ -129,7 +129,7 @@ def client_handler(sock: socket.socket, address: Tuple[str, int]):
         current_session.disconnect()
         print(f"Client {address} has disconnected.")
         other_active_sessions = server_db.getActiveSessions() 
-        msg = f"[{datetime.datetime.fromtimestamp(time.time())}]: Disconnected {ip_address}"
+        msg = f"[{datetime.datetime.fromtimestamp(time.time())}]: {ip_address} has disconnected."
         for other in other_active_sessions:
             other.sendMessage(msg)
         
